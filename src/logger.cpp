@@ -103,10 +103,26 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <body onload="javascript:start();">
     <center>
         <h1>TX Log Messages</h1>
-        <textarea id="logField" rows="40" cols="100" style="margin: 0px; height: 621px; width: 968px;">BEGIN
+        The following command can be used to connect to the websocket using curl, which is a lot faster over the terminal than Chrome. Alternatively, you can use the textfield below to view messages.
+        <br><br>
+        <textarea id="curlCmd" rows="40" cols="100" style="margin: 0px; height: 170px; width: 968px;">
+curl --include \
+     --output - \
+     --no-buffer \
+     --header "Connection: Upgrade" \
+     --header "Upgrade: websocket" \
+     --header "Host: example.com:80" \
+     --header "Origin: http://example.com:80" \
+     --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ==" \
+     --header "Sec-WebSocket-Version: 13" \
+     http://<ipaddr>:81/
+    </textarea>
+    <br><br>
+        <textarea id="logField" rows="40" cols="100" style="margin: 0px; height: 621px; width: 968px;">BEGIN LOG
 </textarea>
         <br><br>
         <button type="button" onclick="saveTextAsFile()" value="save" id="save">Save to file...</button>
+        <br><br>
     </center>
 </body>
 
