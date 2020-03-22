@@ -185,9 +185,9 @@ void handleNotFound()
 void setup()
 {
   #ifdef INVERTED_SERIAL
-    Serial.begin(115200, SERIAL_8N1, SERIAL_FULL, 1, true); // inverted serial
+    Serial.begin(250000, SERIAL_8N1, SERIAL_FULL, 1, true); // inverted serial
   #else
-    Serial.begin(115200);  // non-inverted serial
+    Serial.begin(250000);  // non-inverted serial
   #endif
 
   #ifdef USE_WIFI_MANAGER
