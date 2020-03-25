@@ -5,13 +5,12 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <WiFiManager.h>
+#include <ESP8266HTTPUpdateServer.h>
 
 #include "elrs_eeprom.h"
 
-#define INVERTED_SERIAL // Comment this out for non-inverted serial
+//#define INVERTED_SERIAL // Comment this out for non-inverted serial
 #define USE_WIFI_MANAGER // Comment this out to host an access point rather than use the WiFiManager
-
-ELRS_EEPROM eeprom;
 
 const char *ssid = "ESP8266 Access Point"; // The name of the Wi-Fi network that will be created
 const char *password = "password";   // The password required to connect to it, leave blank for an open network
@@ -20,13 +19,17 @@ MDNSResponder mdns;
 
 ESP8266WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
+ESP8266HTTPUpdateServer httpUpdater;
 
 uint8_t socketNumber;
 
 String inputString = "";
 bool stringComplete = false;
 
+ELRS_EEPROM eeprom;
 uint16_t eppromPointer = 0;
+
+bool webUpdateMode = false;
 
 static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <!DOCTYPE html>
@@ -132,6 +135,7 @@ curl --include \
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length)
 {
   Serial.printf("webSocketEvent(%d, %d, ...)\r\n", num, type);
+
   switch(type) {
     case WStype_DISCONNECTED:
       Serial.printf("[%u] Disconnected!\r\n", num);
@@ -146,7 +150,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     case WStype_TEXT:
       Serial.printf("[%u] get Text: %s\r\n", num, payload);
       // send data to all connected clients
-      webSocket.broadcastTXT(payload, length);
+      // webSocket.broadcastTXT(payload, length);
       break;
     case WStype_BIN:
       Serial.printf("[%u] get binary length: %u\r\n", num, length);
@@ -185,9 +189,9 @@ void handleNotFound()
 void setup()
 {
   #ifdef INVERTED_SERIAL
-    Serial.begin(250000, SERIAL_8N1, SERIAL_FULL, 1, true); // inverted serial
+    Serial.begin(400000, SERIAL_8N1, SERIAL_FULL, 1, true); // inverted serial
   #else
-    Serial.begin(250000);  // non-inverted serial
+    Serial.begin(400000);  // non-inverted serial
   #endif
 
   #ifdef USE_WIFI_MANAGER
@@ -213,6 +217,7 @@ void setup()
   else {
     Serial.println("MDNS.begin failed");
   }
+
   Serial.print("Connect to http://espWebSock.local or http://");
   #ifdef USE_WIFI_MANAGER
     Serial.println(WiFi.localIP());
@@ -223,6 +228,7 @@ void setup()
   server.on("/", handleRoot);
   server.onNotFound(handleNotFound);
 
+  httpUpdater.setup(&server);
   server.begin();
 
   webSocket.begin();
@@ -240,8 +246,10 @@ void serialEvent() {
   }
 }
 
-void loop() {
+void loop()
+{
   serialEvent();
+
   if (stringComplete) {
     String line = inputString;
     inputString = "";
@@ -257,6 +265,7 @@ void loop() {
 
     webSocket.broadcastTXT(line);
   }
+
   server.handleClient();
   webSocket.loop();
 }
